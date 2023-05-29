@@ -17,12 +17,13 @@ from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Dense, Dropout, LSTM, TimeDistributed
 import matplotlib.pyplot as plt
 import plotly_express as px
+import plotly.graph_objects as go
 import yfinance as yf
 
 
 #import dataset 
 df = yf.download('EURUSD=X', period="2y", interval = "1h")
-
+history = pd.DataFrame()
 
 df.drop(['Adj Close', 'Volume'], axis = 1, inplace = True)
 
@@ -41,9 +42,22 @@ df['MA-TP'] = df['TP'].rolling(10).mean()
 df['BOLU'] = df['MA-TP'] + 2 * df['Std']
 df['BOLD'] = df['MA-TP'] - 2 * df['Std']
 
+# open price moving average
+df['open avg'] = df['Open'].rolling(5).mean()
+
+# Close price moving average
+df['Close avg'] = df['Close'].rolling(5).mean()
+
+# High price moving average
+df['High avg'] = df['High'].rolling(5).mean()
+
+# Low price moving average
+df['Low avg'] = df['Low'].rolling(5).mean()
+
+# delete null values
 df.dropna(axis = 0, inplace = True)
 
-df = df[['MA-TP', 'BOLU', 'BOLD', 'Close']]
+df = df[['open avg', 'Close avg', 'High avg', 'Low avg', 'TP', 'MA-TP', 'BOLU', 'BOLD', 'Close']]
 
 
 
@@ -125,6 +139,7 @@ predictions = pd.DataFrame(model.predict(inputs).T,
                           index = [start + timedelta(hours = i) for i in range(n_steps_out)],
                           columns = ['pred Close'])
 
+history = history.append(predictions)
 
 ########## daily based average calculation #################
 # daily base chart
@@ -155,6 +170,13 @@ plt.show()
 fig2, ax = plt.subplots(figsize=(10, 5))
 ax.plot(df[df.index > datetime.today() - timedelta(days = 15)].index, 
         df[df.index > datetime.today() - timedelta(days = 15)]['Close'])
+
+ax.plot(df[df.index > datetime.today() - timedelta(days = 15)].index, 
+        df[df.index > datetime.today() - timedelta(days = 15)]['BOLU'])
+
+ax.plot(df[df.index > datetime.today() - timedelta(days = 15)].index, 
+        df[df.index > datetime.today() - timedelta(days = 15)]['BOLD'])
+
 ax.plot(predictions.index, predictions['pred Close'])
 ax.set_xlabel('date')
 ax.set_ylabel('price')
@@ -165,15 +187,24 @@ plt.show()
 
 #historical price
 
-fig3 = px.line(df, x=df.index, y="Close")
+#fig3 = px.line(df, x=df.index, y="Close")
+
 #fig3.show()
+
+fig3 = go.Figure()
+fig3.add_trace(go.Scatter(x=df.index, y=df["Close"], name="Close", mode="lines"))
+fig3.add_trace(go.Scatter(x=history.index, y=history["pred Close"], name="prdictions", mode="lines"))
+fig3.update_layout(
+    title="history price vs predictions", xaxis_title="Date", yaxis_title="Close"
+)
+
 
 
 def main():
     
     st.title('EUR/USD weekly predictions')
     
-    st.header('last 15 days and next five days predictions')
+    st.header('last 7 days and next five days predictions')
     st.plotly_chart(fig2)
     
     
@@ -186,7 +217,6 @@ def main():
     
     st.header('historical price')
     st.plotly_chart(fig3)
-    
      
     
 if __name__ == '__main__':
