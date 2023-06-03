@@ -142,6 +142,8 @@ history = pd.read_csv('predictions.csv', index_col=0)
 
 history = history.append(predictions)
 
+history.index = pd.to_datetime(history.index)
+
 
 ########## daily based average calculation #################
 # daily base chart
@@ -179,7 +181,7 @@ ax.plot(df[df.index > datetime.today() - timedelta(days = 15)].index,
 ax.plot(df[df.index > datetime.today() - timedelta(days = 15)].index, 
         df[df.index > datetime.today() - timedelta(days = 15)]['BOLD'])
 
-ax.plot(predictions.index, predictions['pred Close'])
+ax.plot(history.index, history['pred Close'])
 ax.set_xlabel('date')
 ax.set_ylabel('price')
 
