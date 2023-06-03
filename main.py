@@ -23,7 +23,6 @@ import yfinance as yf
 
 #import dataset 
 df = yf.download('EURUSD=X', period="2y", interval = "1h")
-history = pd.DataFrame()
 
 df.drop(['Adj Close', 'Volume'], axis = 1, inplace = True)
 
@@ -139,7 +138,10 @@ predictions = pd.DataFrame(model.predict(inputs).T,
                           index = [start + timedelta(hours = i) for i in range(n_steps_out)],
                           columns = ['pred Close'])
 
+history = pd.read_csv('predictions.csv', index_col=0)
+
 history = history.append(predictions)
+
 
 ########## daily based average calculation #################
 # daily base chart
@@ -215,8 +217,8 @@ def main():
     st.write(round(daily_avg, 6))
     
     
-    st.header('historical price')
-    st.plotly_chart(fig3)
+    #st.header('historical price')
+    #st.plotly_chart(fig3)
      
     
 if __name__ == '__main__':
